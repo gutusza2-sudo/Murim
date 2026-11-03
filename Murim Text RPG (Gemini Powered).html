@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Murim Text RPG - AI Powered Edition</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        murim: {
+                            bg: '#05070e',
+                            card: '#0c101d',
+                            cardHover: '#161d31',
+                            border: '#1e293b',
+                            accent: '#38bdf8',
+                            gold: '#fbbf24',
+                            crimson: '#e11d48',
+                            purple: '#a855f7',
+                            emerald: '#10b981',
+                            pink: '#ec4899'
+                        }
+                    },
+                    fontFamily: {
+                        prompt: ['Prompt', 'sans-serif'],
+                        sarabun: ['Sarabun', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #05070e;
+            color: #e2e8f0;
+        }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #05070e; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #e11d48; }
+        .glow-gold { box-shadow: 0 0 15px rgba(251, 191, 36, 0.15); }
+        .glow-pink { box-shadow: 0 0 15px rgba(236, 72, 153, 0.2); }
+        .glow-crimson { box-shadow: 0 0 15px rgba(225, 29, 72, 0.2); }
+    </style>
+</head>
+<body class="min-h-screen bg-murim-bg text-gray-200 flex flex-col justify-between antialiased selection:bg-rose-600 selection:text-white">
+
+    <!-- Header Navigation -->
+    <header class="sticky top-0 z-30 bg-murim-bg/95 backdrop-blur-md border-b border-murim-border px-4 py-2.5 shadow-2xl">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-600 via-purple-600 to-amber-500 flex items-center justify-center text-white font-bold text-xl shadow-lg border border-rose-400/40 glow-crimson">
+                    ⚔️
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-lg font-bold bg-gradient-to-r from-rose-400 via-amber-200 to-purple-300 bg-clip-text text-transparent">
+                        มูริมโอเพ่นเวิลด์ : ตำนานฮาเร็มยุทธภพ AI
+                    </h1>
+                    <p class="text-xs text-gray-400">ประมวลผลสดด้วย Gemini API สุ่มบทบาทไร้ขีดจำกัด</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <button onclick="toggleApiKeyModal()" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md">
+                    <i class="fa-solid fa-key"></i> <span id="api-key-status-label">ใส่ API Key</span>
+                </button>
+                <button onclick="toggleHaremModal()" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md">
+                    <i class="fa-solid fa-heart"></i> <span>เรือนหลัง (<span id="header-harem-count">0</span>)</span>
+                </button>
+                <button onclick="toggleMapModal()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 text-xs font-bold transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-map-location-dot"></i> <span class="hidden sm:inline">แผนที่</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto w-full px-3 sm:px-6 py-4 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        <!-- Left Panel: Player Status & Relationships (4 Columns) -->
+        <aside class="lg:col-span-4 space-y-4 order-2 lg:order-1">
+            
+            <!-- Character Info & Location Card -->
+            <div class="bg-murim-card border border-murim-border rounded-2xl p-4 sm:p-5 shadow-xl glow-crimson">
+                <div class="flex items-center justify-between border-b border-murim-border pb-3 mb-3">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 rounded-full bg-slate-900 border-2 border-rose-500 flex items-center justify-center text-2xl shadow-inner">
+                            🥋
+                        </div>
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <h2 id="player-name" class="font-bold text-base text-white">ตัส</h2>
+                                <span class="text-xs px-2 py-0.5 rounded-full bg-blue-950 text-blue-300 border border-blue-800 font-semibold">เพศ ช.</span>
+                            </div>
+                            <p id="player-title" class="text-xs text-amber-400 font-medium">จอมยุทธ์ผู้สร้างมหาอาณาจักรเรือนหลัง</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location & Money -->
+                <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-2.5 mb-3 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-lg">📍</span>
+                        <div>
+                            <span class="text-[10px] text-gray-400 block leading-tight">ที่อยู่ปัจจุบัน</span>
+                            <span id="current-location-name" class="text-xs font-bold text-amber-300">สำนักมูริมบูรพา</span>
+                        </div>
+                    </div>
+                    <span id="gold-text" class="text-xs font-bold text-amber-400 flex items-center gap-1 bg-amber-950/60 px-2.5 py-1 rounded-lg border border-amber-800">
+                        <i class="fa-solid fa-coins text-amber-300"></i> 100 ตำลึง
+                    </span>
+                </div>
+
+                <!-- Status Bars (HP / MP) -->
+                <div class="space-y-2.5 mb-3">
+                    <div>
+                        <div class="flex justify-between text-xs font-semibold mb-1">
+                            <span class="text-rose-400 flex items-center gap-1"><i class="fa-solid fa-heart"></i> พลังชีวิต (HP)</span>
+                            <span id="hp-text" class="text-gray-300">100 / 100</span>
+                        </div>
+                        <div class="w-full h-2.5 bg-gray-950 rounded-full overflow-hidden p-0.5 border border-rose-950">
+                            <div id="hp-bar" class="h-full bg-gradient-to-r from-rose-600 to-red-400 rounded-full transition-all duration-300" style="width: 100%;"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs font-semibold mb-1">
+                            <span class="text-cyan-400 flex items-center gap-1"><i class="fa-solid fa-bolt"></i> ลมปราณ (MP)</span>
+                            <span id="mp-text" class="text-gray-300">100 / 100</span>
+                        </div>
+                        <div class="w-full h-2.5 bg-gray-950 rounded-full overflow-hidden p-0.5 border border-cyan-950">
+                            <div id="mp-bar" class="h-full bg-gradient-to-r from-blue-600 to-cyan-400 rounded-full transition-all duration-300" style="width: 100%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Relationships & Known NPCs Panel -->
+            <div class="bg-murim-card border border-murim-border rounded-2xl p-4 sm:p-5 shadow-xl glow-pink">
+                <div class="flex items-center justify-between border-b border-murim-border pb-3 mb-3">
+                    <h3 class="text-xs font-bold text-gray-200 flex items-center gap-2">
+                        <i class="fa-solid fa-users text-pink-400"></i> ความสัมพันธ์ตัวละครที่รู้จัก
+                    </h3>
+                </div>
+                <div id="relationships-container" class="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+                    <!-- Dynamic Active NPCs rendered here -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- Right Panel: Story Output & Interactive Input (8 Columns) -->
+        <section class="lg:col-span-8 flex flex-col space-y-4 order-1 lg:order-2">
+            
+            <!-- Story Container -->
+            <div class="bg-murim-card border border-murim-border rounded-2xl p-4 sm:p-6 shadow-xl flex-1 flex flex-col min-h-[440px] max-h-[580px] overflow-hidden">
+                <div class="flex items-center justify-between border-b border-murim-border pb-3 mb-4">
+                    <div class="flex items-center space-x-2">
+                        <span id="ai-status-indicator" class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <h2 class="text-sm font-bold text-gray-200">บันทึกบทบรรยายยุทธภพ (Gemini AI Live)</h2>
+                    </div>
+                    <span id="current-tag" class="text-xs px-2.5 py-1 rounded-md font-semibold bg-rose-950 text-rose-300 border border-rose-800">
+                        สำนักมูริมบูรพา
+                    </span>
+                </div>
+
+                <!-- Story Stream Log -->
+                <div id="story-log" class="flex-1 overflow-y-auto space-y-4 pr-2 text-sm leading-relaxed font-sarabun">
+                    <!-- AI Dialogues and Story Text appended here -->
+                </div>
+
+                <!-- Loading Indicator -->
+                <div id="loading-spinner" class="hidden py-3 text-center space-x-2 text-xs text-amber-400 animate-pulse border-t border-murim-border mt-2">
+                    <i class="fa-solid fa-spinner fa-spin text-base"></i>
+                    <span>Gemini AI กำลังประมวลผลคำตอบและคำนวณสถานการณ์สดๆ...</span>
+                </div>
+            </div>
+
+            <!-- Choice Buttons & Custom Input Box -->
+            <div class="bg-murim-card border border-murim-border rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> เลือก 4 สายทางเลือก หรือ พิมพ์คำตอบอิสระ
+                    </h3>
+                </div>
+
+                <!-- 4 Action Choice Buttons -->
+                <div id="choices-container" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <!-- Dynamic Choice Buttons -->
+                </div>
+
+                <!-- Custom Action Input Box -->
+                <div class="pt-2 border-t border-murim-border">
+                    <div class="flex gap-2">
+                        <input type="text" id="custom-input" placeholder="พิมพ์การกระทำ คำพูด หรือบทบาทของคุณ (เช่น: พาโซฮีไปดูดอกไม้หลังสำนักแล้วบอกรัก)..." 
+                            class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-gray-200 focus:outline-none focus:border-rose-500 transition placeholder-gray-500"
+                            onkeypress="if(event.key==='Enter') sendCustomAction()">
+                        <button onclick="sendCustomAction()" id="send-btn" class="bg-gradient-to-r from-rose-600 via-purple-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white text-xs sm:text-sm font-bold px-5 py-2.5 rounded-xl shadow-lg transition flex items-center gap-1.5 shrink-0">
+                            <span>ส่งคำตอบ</span> <i class="fa-solid fa-paper-plane text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Gemini API Key Modal -->
+    <div id="api-key-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-murim-card border border-amber-500/50 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-murim-border pb-3">
+                <div class="flex items-center space-x-2">
+                    <span class="text-2xl">🔑</span>
+                    <h3 class="text-base font-bold text-amber-300">ตั้งค่า Gemini API Key</h3>
+                </div>
+                <button onclick="toggleApiKeyModal()" class="text-gray-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <p class="text-xs text-gray-300 leading-relaxed">
+                กรอก **Gemini API Key** จาก <a href="https://aistudio.google.com/" target="_blank" class="text-amber-400 underline font-bold">Google AI Studio</a> เพื่อให้ AI คำนวณเนื้อเรื่อง สุ่มบทพูด และปรับสถานะความสัมพันธ์สดๆ 100% 
+            </p>
+
+            <div class="space-y-2">
+                <label class="text-xs font-semibold text-gray-300">Gemini API Key:</label>
+                <input type="password" id="api-key-input" placeholder="AIzaSy..." 
+                    class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-gray-100 focus:outline-none focus:border-amber-400">
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="saveApiKey()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 text-white text-xs font-bold shadow-md">
+                    บันทึก API Key
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Harem & Spouses Modal -->
+    <div id="harem-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-murim-card border border-pink-500/50 rounded-3xl max-w-4xl w-full p-5 sm:p-6 shadow-2xl space-y-4 flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center border-b border-murim-border pb-3">
+                <div class="flex items-center space-x-3">
+                    <span class="text-3xl">🏯</span>
+                    <div>
+                        <h3 class="text-lg font-bold text-pink-300">เรือนหลังมูริม : ทำเนียบภรรยา (Harem)</h3>
+                        <p class="text-xs text-gray-400">ภรรยาในเรือนหลังคอยสนับสนุนและมอบบัฟลมปราณพิเศษ</p>
+                    </div>
+                </div>
+                <button onclick="toggleHaremModal()" class="text-gray-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div id="harem-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto p-1 flex-1">
+                <!-- Dynamic Spouses -->
+            </div>
+        </div>
+    </div>
+
+    <!-- World Map Modal -->
+    <div id="map-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-murim-card border border-amber-500/40 rounded-3xl max-w-3xl w-full p-5 sm:p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-murim-border pb-3">
+                <div class="flex items-center space-x-2">
+                    <span class="text-2xl">🗺️</span>
+                    <div>
+                        <h3 class="text-base font-bold text-amber-300">แผนที่ 8 แคว้นยุทธภพ</h3>
+                        <p class="text-xs text-gray-400">ออกเดินทางไปตามดินแดนต่างๆ เพื่อสุ่มพบผู้คนและหญิงงาม</p>
+                    </div>
+                </div>
+                <button onclick="toggleMapModal()" class="text-gray-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto" id="locations-list">
+                <!-- Dynamic Map Buttons -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Engine & Gemini AI Integration Script -->
+    <script>
+        // Core Game State
+        let gameState = {
+            player: {
+                name: "ตัส",
+                gender: "ช.",
+                title: "จอมยุทธ์ผู้สร้างมหาอาณาจักรเรือนหลัง",
+                hp: 100,
+                maxHp: 100,
+                mp: 100,
+                maxMp: 100,
+                gold: 100,
+                currentLocation: "สำนักมูริมบูรพา"
+            },
+            npcs: {
+                'sohee': { id: 'sohee', name: 'พัคโซฮี', gender: 'ญ.', role: 'ศิษย์น้องสายสมุนไพร', avatar: '🌸', affinity: 65, hate: 0, isMarried: false, spouseBuff: '+15 ฟื้นฟู MP' },
+                'hyonwoo': { id: 'hyonwoo', name: 'ฮยอนอู', gender: 'ช.', role: 'ศิษย์พี่สายบู๊บ้าพลัง', avatar: '⚔️', affinity: 10, hate: 40, isMarried: false, spouseBuff: null },
+                'paek': { id: 'paek', name: 'ผู้อาวุโสแพค', gender: 'ช.', role: 'ผู้คุมกฎสำนักมูริม', avatar: '👴🏻', affinity: 30, hate: 10, isMarried: false, spouseBuff: null }
+            },
+            history: [] // Holds recent turn dialogue history for AI context
+        };
+
+        const locations = {
+            "สำนักมูริมบูรพา": "สำนักธรรมะใหญ่ ยอดฝีมือและศิษย์น้องสตรีมากมาย",
+            "เมืองหลวงมังกรฟ้า": "ศูนย์กลางอำนาจ วังหลวง และตระกูลใหญ่",
+            "ตลาดมืดหุบเขาเงา": "แหล่งการค้าของผิดกฎหมาย ยาพิษ และสายลับ",
+            "วังน้ำแข็งทะเลเหนือ": "ดินแดนหิมะศักดิ์สิทธิ์ ยอดฝีมือสายความเย็น",
+            "พรรคมารสวรรค์": "ฐานที่มั่นธิดามารและจอมยุทธ์สายอธรรม",
+            "สำนักง้อไบ๊": "อารามแม่ชีและศิษย์สตรีผู้ฝึกวิชากระบี่",
+            "หอโคมเขียวมังกรทอง": "สถานเริงรมย์หรูหรา แหล่งรวมข้อมูลลับ",
+            "ยอดเขาเซียนมู่หลาน": "แดนเร้นกายของยอดฝีมือไร้พ่ายโบราณ"
+        };
+
+        // System Instruction for Gemini Model
+        const GEMINI_SYSTEM_INSTRUCTION = `คุณคือ Game Master (GM) และ AI Engine สำหรับเกม "Murim Text RPG" นิยายกำลังภายในภาษาไทย
+กฎสำคัญที่คุณต้องปฏิบัติตามอย่างเคร่งครัด:
+1. ตัวเอกของเกมชื่อ "ตัส" เพศชาย (ช.) 
+2. ตัวละครทุกตัวระบุเพศชัดเจนเป็น (ช.) หรือ (ญ.) เท่านั้น ห้ามใช้ชื่อย่อ
+3. รองรับการจีบและการแต่งงานมีภรรยาหลายคน (Harem System)
+4. เมื่อผู้ใช้เลือกทางเลือก หรือพิมพ์ข้อความอิสระ (Custom Action) คุณต้องแต่งเนื้อเรื่องตอนต่อไปอย่างเข้มข้น สนุก สนิทสนม มีมิติ
+5. คุณต้องคืนค่ากลับมาในรูปแบบ JSON ตามโครงสร้างนี้เท่านั้น (ห้ามใส่ข้อความนอกเหนือจาก JSON):
+
+{
+  "tag": "ชื่อสถานที่หรือสถานการณ์สั้นๆ",
+  "paragraphs": [
+    { "speaker": "ชื่อตัวละคร หรือ บรรยาย", "avatar": "อิโมจิที่เหมาะสม", "gender": "ช. หรือ ญ. หรือ เผ่าพันธุ์", "text": "บทบรรยายหรือคำพูด" }
+  ],
+  "statChanges": {
+    "hpChange": 0,
+    "mpChange": 0,
+    "goldChange": 0
+  },
+  "npcChanges": [
+    {
+      "id": "ไอดีตัวละครภาษาอังกฤษ",
+      "name": "ชื่อตัวละครภาษาไทย",
+      "gender": "ช. หรือ ญ.",
+      "role": "ตำแหน่ง/สำนัก",
+      "avatar": "อิโมจิประจำตัว",
+      "affinityChange": 10,
+      "hateChange": 0,
+      "marryTarget": false,
+      "spouseBuff": "คำอธิบายบัฟภรรยาถ้าแต่งงาน"
+    }
+  ],
+  "choices": [
+    { "type": "fight", "label": "🔥 [สายบู๊]", "text": "คำอธิบายการกระทำสายต่อสู้" },
+    { "type": "flirt", "label": "🌸 [สายจีบ/หยอกเสน่ห์]", "text": "คำอธิบายการกระทำสายเกี้ยวพาราสี" },
+    { "type": "spy", "label": "🧠 [สายปัญญา/สุขุม]", "text": "คำอธิบายการกระทำสายใช้สมอง" },
+    { "type": "taunt", "label": "😈 [สายกวน/ยั่วโมโห]", "text": "คำอธิบายการกระทำสายปั่นป่วน" }
+  ]
+}`;
+
+        // Initial Start Scene
+        const initialScene = {
+            tag: "สำนักมูริมบูรพา",
+            paragraphs: [
+                { speaker: "บรรยาย", avatar: "🏔️", text: "ยามเช้า ณ สำนักมูริมบูรพา ลมเย็นพัดโชยกลิ่นหอมของสมุนไพร คุณ (**ตัส [ช.]**) กำลังยืนปรับลมปราณ **พัคโซฮี [ญ.]** ศิษย์น้องสาวเดินเอียงอายเข้ามาหาพร้อมถุงหอม ขณะที่ **ฮยอนอู [ช.]** ยืนกอดอกมองอย่างไม่พอใจ" },
+                { speaker: "พัคโซฮี", avatar: "🌸", gender: "ญ.", text: '"ศิษย์พี่ตัสคะ... ถุงหอมนี้ข้าตั้งใจปรุงยาวิเศษมาให้ท่าน หากท่านยอมรับ ข้าพร้อมดูแลท่านเสมอเลยนะคะ!"' }
+            ],
+            choices: [
+                { type: "flirt", label: "🌸 [สายจีบ/หยอกเสน่ห์]", text: '"ขอบใจนะโซฮี... ถุงหอมว่าหอมแล้ว แต่รอยยิ้มของเจ้านั้นหวานหอมยิ่งกว่า"' },
+                { type: "fight", label: "🔥 [สายบู๊]", text: '"ฮยอนอู! มองหน้าข้าแบบนั้น อยากลองดีกับข้าในลานฝึกรึไง?"' },
+                { type: "spy", label: "🧠 [สายปัญญา/สุขุม]", text: '"โซฮี ยาปรุงนี้มีส่วนผสมของสมุนไพรจากหุบเขาเงาใช่หรือไม่?"' },
+                { type: "taunt", label: "😈 [สายกวน/ยั่วโมโห]", text: 'จูบแก้มโซฮีต่อหน้าฮยอนอู แล้วยิ้มเยาะยั่วโมโห' }
+            ]
+        };
+
+        // Render Dashboard UI
+        function updateUI() {
+            const p = gameState.player;
+            document.getElementById('player-name').innerText = p.name;
+            document.getElementById('player-title').innerText = p.title;
+            document.getElementById('current-location-name').innerText = p.currentLocation;
+            document.getElementById('gold-text').innerHTML = `<i class="fa-solid fa-coins text-amber-300"></i> ${p.gold} ตำลึง`;
+
+            document.getElementById('hp-text').innerText = `${p.hp} / ${p.maxHp}`;
+            document.getElementById('hp-bar').style.width = `${(p.hp / p.maxHp) * 100}%`;
+
+            document.getElementById('mp-text').innerText = `${p.mp} / ${p.maxMp}`;
+            document.getElementById('mp-bar').style.width = `${(p.mp / p.maxMp) * 100}%`;
+
+            const marriedList = Object.values(gameState.npcs).filter(n => n.isMarried);
+            document.getElementById('header-harem-count').innerText = marriedList.length;
+
+            // Render Relationships Panel
+            const relContainer = document.getElementById('relationships-container');
+            relContainer.innerHTML = '';
+
+            Object.values(gameState.npcs).forEach(npc => {
+                const card = document.createElement('div');
+                card.className = `p-3 rounded-xl border space-y-1.5 ${npc.isMarried ? 'bg-pink-950/60 border-pink-700/80 glow-pink' : 'bg-slate-900 border-slate-800'}`;
+                card.innerHTML = `
+                    <div class="flex items-center justify-between text-xs">
+                        <div class="flex items-center space-x-1.5 font-bold text-gray-200">
+                            <span class="text-base">${npc.avatar}</span>
+                            <span>${npc.name}</span>
+                            <span class="text-[10px] text-cyan-400">(${npc.gender})</span>
+                        </div>
+                        ${npc.isMarried ? '<span class="text-[10px] bg-pink-900 text-pink-200 px-2 py-0.5 rounded-full font-bold">💍 ภรรยา</span>' : ''}
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-[10px] pt-1 border-t border-slate-800/80">
+                        <span class="text-pink-400 font-semibold"><i class="fa-solid fa-heart"></i> ชอบ: ${npc.affinity}%</span>
+                        <span class="text-rose-500 font-semibold"><i class="fa-solid fa-skull"></i> เกลียด: ${npc.hate || 0}%</span>
+                    </div>
+                `;
+                relContainer.appendChild(card);
+            });
+
+            // Check API Key Status Label
+            const key = localStorage.getItem('gemini_api_key');
+            const statusLabel = document.getElementById('api-key-status-label');
+            const indicator = document.getElementById('ai-status-indicator');
+            if (key) {
+                statusLabel.innerText = "เชื่อมต่อ API แล้ว";
+                indicator.className = "w-3 h-3 rounded-full bg-emerald-500 animate-pulse";
+            } else {
+                statusLabel.innerText = "ใส่ API Key (AI)";
+                indicator.className = "w-3 h-3 rounded-full bg-amber-500 animate-pulse";
+            }
+        }
+
+        // Append Story Node
+        function appendStoryNode(node) {
+            document.getElementById('current-tag').innerText = node.tag || gameState.player.currentLocation;
+            const storyLog = document.getElementById('story-log');
+
+            node.paragraphs.forEach(para => {
+                const paraEl = document.createElement('div');
+                paraEl.className = 'bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 space-y-1 shadow-md';
+                let genderTag = para.gender ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-cyan-300 border border-slate-700 ml-1 font-normal">${para.gender}</span>` : '';
+                
+                paraEl.innerHTML = `
+                    <div class="flex items-center space-x-2 font-bold text-xs text-amber-400 mb-1">
+                        <span class="text-base">${para.avatar}</span>
+                        <span>${para.speaker}</span>
+                        ${genderTag}
+                    </div>
+                    <p class="text-gray-300 font-sarabun text-sm leading-relaxed">${para.text}</p>
+                `;
+                storyLog.appendChild(paraEl);
+            });
+
+            storyLog.scrollTop = storyLog.scrollHeight;
+            renderChoices(node.choices);
+        }
+
+        function renderChoices(choices) {
+            const container = document.getElementById('choices-container');
+            container.innerHTML = '';
+
+            if (!choices || choices.length === 0) return;
+
+            choices.forEach(choice => {
+                const btn = document.createElement('button');
+                let bgStyle = 'from-slate-800 to-slate-900 border-slate-700 hover:border-rose-500 text-gray-200';
+                if (choice.type === 'flirt') bgStyle = 'from-pink-950/80 to-slate-900 border-pink-700 hover:border-pink-400 text-pink-200';
+                if (choice.type === 'fight') bgStyle = 'from-rose-950/80 to-slate-900 border-rose-800 hover:border-rose-400 text-rose-200';
+
+                btn.className = `w-full text-left p-3 rounded-xl border bg-gradient-to-r ${bgStyle} transition shadow-md hover:scale-[1.01] active:scale-[0.99] flex flex-col justify-between space-y-1`;
+                btn.innerHTML = `
+                    <span class="text-xs font-bold flex items-center gap-1.5">${choice.label}</span>
+                    <span class="text-xs text-gray-300 font-sarabun line-clamp-2">${choice.text}</span>
+                `;
+
+                btn.onclick = () => handleUserAction(choice.text);
+                container.appendChild(btn);
+            });
+        }
+
+        // Send User Input to Gemini API Live
+        async function handleUserAction(userInputText) {
+            const apiKey = localStorage.getItem('gemini_api_key') || "";
+
+            // User Chat Bubble Append
+            const storyLog = document.getElementById('story-log');
+            const userActionEl = document.createElement('div');
+            userActionEl.className = 'flex justify-end my-2';
+            userActionEl.innerHTML = `
+                <div class="bg-gradient-to-r from-rose-950 to-purple-950 border border-rose-700 text-rose-200 text-xs sm:text-sm px-4 py-2.5 rounded-2xl rounded-tr-none max-w-[85%] font-sarabun shadow-md">
+                    <span class="text-rose-400 font-bold mr-1">${gameState.player.name} (${gameState.player.gender}):</span> ${userInputText}
+                </div>
+            `;
+            storyLog.appendChild(userActionEl);
+            storyLog.scrollTop = storyLog.scrollHeight;
+
+            document.getElementById('loading-spinner').classList.remove('hidden');
+
+            // Fallback Offline Simulation Mode if no API Key provided
+            if (!apiKey) {
+                setTimeout(() => {
+                    document.getElementById('loading-spinner').classList.add('hidden');
+                    runFallbackMode(userInputText);
+                }, 1000);
+                return;
+            }
+
+            // Prepare Prompt & Context Payload
+            const promptContext = `
+[สถานะปัจจุบันในเกม]
+- ตัวเอก: ${gameState.player.name} (เพศ: ${gameState.player.gender})
+- สถานที่: ${gameState.player.currentLocation}
+- HP: ${gameState.player.hp}/${gameState.player.maxHp}, MP: ${gameState.player.mp}/${gameState.player.maxMp}, เงิน: ${gameState.player.gold} ตำลึง
+- ตัวละครที่รู้จัก: ${JSON.stringify(gameState.npcs)}
+
+[คำสั่ง/การกระทำของผู้ใช้ล่าสุด]
+"${userInputText}"
+
+โปรดประมวลผลคำกระทำของผู้ใช้ และส่งคืน JSON ตามกำหนดเท่านั้น!`;
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: promptContext }] }],
+                        systemInstruction: { parts: [{ text: GEMINI_SYSTEM_INSTRUCTION }] },
+                        generationConfig: { responseMimeType: "application/json" }
+                    })
+                });
+
+                const data = await response.json();
+                document.getElementById('loading-spinner').classList.add('hidden');
+
+                if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
+                    const aiJsonRaw = data.candidates[0].content.parts[0].text;
+                    const resultNode = JSON.parse(aiJsonRaw);
+                    applyAiResults(resultNode);
+                } else {
+                    alert('เกิดข้อผิดพลาดในการประมวลผลจาก Gemini API โปรดตรวจสอบ API Key');
+                    runFallbackMode(userInputText);
+                }
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loading-spinner').classList.add('hidden');
+                runFallbackMode(userInputText);
+            }
+        }
+
+        // Apply AI Engine Results to Game State
+        function applyAiResults(node) {
+            // Apply Stat Changes
+            if (node.statChanges) {
+                const p = gameState.player;
+                if (node.statChanges.hpChange) p.hp = Math.min(p.maxHp, Math.max(0, p.hp + node.statChanges.hpChange));
+                if (node.statChanges.mpChange) p.mp = Math.min(p.maxMp, Math.max(0, p.mp + node.statChanges.mpChange));
+                if (node.statChanges.goldChange) p.gold = Math.max(0, p.gold + node.statChanges.goldChange);
+            }
+
+            // Apply NPC Dynamic Changes
+            if (node.npcChanges && Array.isArray(node.npcChanges)) {
+                node.npcChanges.forEach(change => {
+                    if (!gameState.npcs[change.id]) {
+                        gameState.npcs[change.id] = {
+                            id: change.id,
+                            name: change.name,
+                            gender: change.gender || 'ญ.',
+                            role: change.role || 'ยอดฝีมือเร้นกาย',
+                            avatar: change.avatar || '🌸',
+                            affinity: 20,
+                            hate: 0,
+                            isMarried: false,
+                            spouseBuff: change.spouseBuff || null
+                        };
+                    }
+
+                    const npc = gameState.npcs[change.id];
+                    if (change.affinityChange) npc.affinity = Math.min(100, Math.max(0, npc.affinity + change.affinityChange));
+                    if (change.hateChange) npc.hate = Math.min(100, Math.max(0, (npc.hate || 0) + change.hateChange));
+                    if (change.marryTarget) {
+                        npc.isMarried = true;
+                        npc.affinity = 100;
+                    }
+                });
+            }
+
+            updateUI();
+            appendStoryNode(node);
+        }
+
+        // Offline Fallback Simulator Mode
+        function runFallbackMode(userInputText) {
+            const isMarriage = userInputText.includes('แต่งงาน') || userInputText.includes('เมีย') || userInputText.includes('ห้อง') || userInputText.includes('จีบ');
+            let fallbackNode = {
+                tag: gameState.player.currentLocation,
+                paragraphs: [
+                    { 
+                        speaker: "บรรยาย", 
+                        avatar: "📜", 
+                        text: `คุณได้ทำคำสั่ง "${userInputText}" (โหมด Demo: โปรดใส่ Gemini API Key ที่มุมขวาบนเพื่อประมวลผลด้วย AI สดๆ 100%)` 
+                    }
+                ],
+                choices: [
+                    { type: "flirt", label: "🌸 [สายจีบ/หยอกเสน่ห์]", text: "เกี้ยวพาราสีคำหวานต่อ" },
+                    { type: "fight", label: "🔥 [สายบู๊]", text: "ชักกระบี่เปิดฉากประลองวิชา" },
+                    { type: "spy", label: "🧠 [สายปัญญา]", text: "วิเคราะห์สถานการณ์เพื่อหาทางเปรียบ" },
+                    { type: "taunt", label: "😈 [สายกวน]", text: "พูดจายั่วโมโหคู่ต่อสู้" }
+                ]
+            };
+
+            if (isMarriage && gameState.npcs['sohee']) {
+                gameState.npcs['sohee'].isMarried = true;
+                gameState.npcs['sohee'].affinity = 100;
+                fallbackNode.paragraphs.push({
+                    speaker: "พัคโซฮี",
+                    avatar: "🌸",
+                    gender: "ญ.",
+                    text: '"ศิษย์พี่ตัสคะ... หัวใจและชีวิตของข้า มอบให้ท่านเป็นสามีแต่เพียงผู้เดียวค่ะ!" (รับเข้าสู่เรือนหลังสำเร็จ!)'
+                });
+            }
+
+            updateUI();
+            appendStoryNode(fallbackNode);
+        }
+
+        function sendCustomAction() {
+            const input = document.getElementById('custom-input');
+            const val = input.value.trim();
+            if (!val) return;
+            input.value = '';
+            handleUserAction(val);
+        }
+
+        // API Key Modal Functions
+        function toggleApiKeyModal() {
+            const modal = document.getElementById('api-key-modal');
+            modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) {
+                document.getElementById('api-key-input').value = localStorage.getItem('gemini_api_key') || '';
+            }
+        }
+
+        function saveApiKey() {
+            const key = document.getElementById('api-key-input').value.trim();
+            localStorage.setItem('gemini_api_key', key);
+            toggleApiKeyModal();
+            updateUI();
+            alert('บันทึก Gemini API Key เรียบร้อยแล้ว! พร้อมประมวลผลด้วย AI สดๆ');
+        }
+
+        // Harem Modal
+        function toggleHaremModal() {
+            const modal = document.getElementById('harem-modal');
+            modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) {
+                const container = document.getElementById('harem-list-container');
+                container.innerHTML = '';
+
+                const married = Object.values(gameState.npcs).filter(n => n.isMarried);
+                if (married.length === 0) {
+                    container.innerHTML = `<div class="col-span-2 text-center text-gray-400 py-10">ยังไม่มีภรรยาในเรือนหลัง ออกท่องยุทธภพเพื่อเกี้ยวพาราสีหญิงงาม!</div>`;
+                    return;
+                }
+
+                married.forEach(spouse => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-slate-900 border border-pink-500/50 p-4 rounded-2xl space-y-2 glow-pink';
+                    card.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-3xl">${spouse.avatar}</span>
+                                <div>
+                                    <h4 class="font-bold text-sm text-pink-200">${spouse.name} <span class="text-xs text-cyan-400">(${spouse.gender})</span></h4>
+                                    <p class="text-xs text-gray-400">${spouse.role}</p>
+                                </div>
+                            </div>
+                            <span class="text-xs px-2.5 py-1 bg-pink-950 text-pink-300 border border-pink-800 rounded-full font-bold">ภรรยาเรียบร้อย</span>
+                        </div>
+                        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-xs text-amber-300 font-semibold flex items-center justify-between">
+                            <span>✨ บัฟภรรยา:</span>
+                            <span>${spouse.spouseBuff || '+15% บำรุงลมปราณ'}</span>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+        }
+
+        // Map Travel Engine
+        function toggleMapModal() {
+            const modal = document.getElementById('map-modal');
+            modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) {
+                const list = document.getElementById('locations-list');
+                list.innerHTML = '';
+
+                Object.keys(locations).forEach(locName => {
+                    const isCurrent = gameState.player.currentLocation === locName;
+                    const btn = document.createElement('button');
+                    btn.className = `p-3.5 rounded-2xl border text-left flex items-center justify-between transition ${isCurrent ? 'bg-amber-950/80 border-amber-500 text-amber-200' : 'bg-slate-900 border-slate-800 hover:border-rose-500 text-gray-300'}`;
+                    btn.innerHTML = `
+                        <div>
+                            <span class="text-xs font-bold block">${locName} ${isCurrent ? '(ที่อยู่ปัจจุบัน)' : ''}</span>
+                            <span class="text-[10px] text-gray-400 leading-tight block">${locations[locName]}</span>
+                        </div>
+                    `;
+                    btn.onclick = () => {
+                        gameState.player.currentLocation = locName;
+                        toggleMapModal();
+                        updateUI();
+                        handleUserAction(`เดินทางมาถึง ${locName}`);
+                    };
+                    list.appendChild(btn);
+                });
+            }
+        }
+
+        window.onload = function() {
+            updateUI();
+            appendStoryNode(initialScene);
+        };
+    </script>
+</body>
+</html>
