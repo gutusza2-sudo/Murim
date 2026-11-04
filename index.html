@@ -526,7 +526,8 @@
                             { role: "system", content: GROQ_SYSTEM_INSTRUCTION },
                             { role: "user", content: promptContext }
                         ],
-                        response_format: { type: "json_object" }
+                           response_format: { type: "json_object" },
+                           max_tokens: 1500
                     })
                 });
 
@@ -549,6 +550,7 @@
                 }
                 applyAiResults(JSON.parse(aiJsonRaw));
             } catch (err) {
+                alert('เรียก API ไม่สำเร็จ: ' + err.message);      
                 console.error(err);
                 document.getElementById('loading-spinner').classList.add('hidden');
                 runFallbackMode(userInputText);
