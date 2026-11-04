@@ -530,17 +530,24 @@
                     })
                 });
 
-                const data = await response.json();
+                                const data = await response.json();
                 document.getElementById('loading-spinner').classList.add('hidden');
 
-                if (data.choices && data.choices[0]?.message?.content) {
-                    const aiJsonRaw = data.choices[0].message.content;
-                    const resultNode = JSON.parse(aiJsonRaw);
-                    applyAiResults(resultNode);
-                } else {
-                    alert('เกิดข้อผิดพลาดในการประมวลผลจาก Groq API โปรดตรวจสอบ API Key');
+                if (!response.ok) {
+                    const msg = data?.error?.message || ('HTTP ' + response.status);
+                    console.error('Groq error', response.status, data);
+                    alert('Groq API error (' + response.status + '): ' + msg);
                     runFallbackMode(userInputText);
+                    return;
                 }
+
+                const aiJsonRaw = data.choices?.[0]?.message?.content;
+                if (!aiJsonRaw) {
+                    alert('Groq ตอบกลับมาไม่มีเนื้อหา');
+                    runFallbackMode(userInputText);
+                    return;
+                }
+                applyAiResults(JSON.parse(aiJsonRaw));
             } catch (err) {
                 console.error(err);
                 document.getElementById('loading-spinner').classList.add('hidden');
