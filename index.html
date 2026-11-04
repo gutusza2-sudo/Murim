@@ -323,6 +323,7 @@
 2. ตัวละครทุกตัวระบุเพศชัดเจนเป็น (ช.) หรือ (ญ.) เท่านั้น ห้ามใช้ชื่อย่อ
 3. รองรับการจีบและการแต่งงานมีภรรยาหลายคน (Harem System)
 4. เมื่อผู้ใช้เลือกทางเลือก หรือพิมพ์ข้อความอิสระ (Custom Action) คุณต้องแต่งเนื้อเรื่องตอนต่อไปอย่างเข้มข้น สนุก สนิทสนม มีมิติ
+4.1 ต้องต่อเนื่องจาก "เนื้อเรื่องที่ผ่านมาล่าสุด" เสมอ ฉาก สถานที่ และคู่ต่อสู้ต้องเป็นคนเดิมจนกว่าเหตุการณ์จะจบลงอย่างสมเหตุสมผล ห้ามเปลี่ยนฉากหรือเปิดตัวละครใหม่ที่ไม่เกี่ยวข้องโดยไม่มีที่มา หากผู้เล่นกำลังต่อสู้อยู่ ให้เล่าผลการต่อสู้ต่อทันที (ใครโดนอะไร HP ลดเท่าไร) ไม่ใช่เริ่มฉากใหม่
 5. คุณต้องคืนค่ากลับมาในรูปแบบ JSON ตามโครงสร้างนี้เท่านั้น (ห้ามใส่ข้อความนอกเหนือจาก JSON):
 
 {
@@ -508,6 +509,9 @@
 - HP: ${gameState.player.hp}/${gameState.player.maxHp}, MP: ${gameState.player.mp}/${gameState.player.maxMp}, เงิน: ${gameState.player.gold} ตำลึง
 - ตัวละครที่รู้จัก: ${JSON.stringify(gameState.npcs)}
 
+[เนื้อเรื่องที่ผ่านมาล่าสุด (เรียงจากเก่าไปใหม่)]
+${gameState.history.slice(-6).map((h, i) => `${i + 1}. ผู้เล่นทำ: "${h.action}"\n   ผลที่เกิดขึ้น: ${h.story}`).join('\n') || '(เพิ่งเริ่มเกม)'}
+
 [คำสั่ง/การกระทำของผู้ใช้ล่าสุด]
 "${userInputText}"
 
@@ -527,7 +531,8 @@
                             { role: "user", content: promptContext }
                         ],
                            response_format: { type: "json_object" },
-                           max_tokens: 4000
+                        temperature: 0.7
+                        max_tokens: 4000
                     })
                 });
 
@@ -548,8 +553,12 @@
                     runFallbackMode(userInputText);
                     return;
                 }
-                applyAiResults(JSON.parse(aiJsonRaw));
-            } catch (err) {
+                const resultNode = JSON.parse(aiJsonRaw);
+                gameState.history.push({
+                    action: userInputText,
+                    story: (resultNode.paragraphs || []).map(p => p.text).join(' ').slice(0, 500)
+                });
+                applyAiResults(resultNode);            } catch (err) {
                 alert('เรียก API ไม่สำเร็จ: ' + err.message);      
                 console.error(err);
                 document.getElementById('loading-spinner').classList.add('hidden');
