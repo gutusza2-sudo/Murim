@@ -531,7 +531,7 @@ ${gameState.history.slice(-6).map((h, i) => `${i + 1}. ผู้เล่นท�
                             { role: "user", content: promptContext }
                         ],
                            response_format: { type: "json_object" },
-                        temperature: 0.7
+                        temperature: 0.7,
                         max_tokens: 4000
                     })
                 });
