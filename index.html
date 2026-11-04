@@ -521,13 +521,13 @@
                         'Authorization': `Bearer ${apiKey}`
                     },
                     body: JSON.stringify({
-                        model: "llama-3.3-70b-versatile",
+                           model: "openai/gpt-oss-120b",
                         messages: [
                             { role: "system", content: GROQ_SYSTEM_INSTRUCTION },
                             { role: "user", content: promptContext }
                         ],
                            response_format: { type: "json_object" },
-                           max_tokens: 1500
+                           max_tokens: 4000
                     })
                 });
 
